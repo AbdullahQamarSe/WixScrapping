@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Real Real</title>
+    <style>
+        .loader {
+          border: 16px solid #f3f3f3;
+          border-radius: 50%;
+          border-top: 16px solid #3498db;
+          width: 120px;
+          height: 120px;
+          -webkit-animation: spin 2s linear infinite; /* Safari */
+          animation: spin 2s linear infinite;
+        }
+        
+        /* Safari */
+        @-webkit-keyframes spin {
+          0% { -webkit-transform: rotate(0deg); }
+          100% { -webkit-transform: rotate(360deg); }
+        }
+        
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <form action="{% url 'realreal' %}" method="post" enctype="multipart/form-data" onsubmit="hideDiv()" style="margin-top: 50px;">
+        {% csrf_token %}
+        <div id="content_div" style="display: flex; justify-content: center;">
+            <div style="display: block;">
+                
+                {% if csv_file  %}
+                <a id='csv_link' hidden href="{{csv_file}}" download=""  >download the file to see the results</a>
+                {% endif %}
+                <label for="upload_csv"> Click to upload csv</label>
+                <input type="file" required id="upload_csv" name="csv_file">
+                <button type="submit">Upload Csv</button>
+                
+            </div>
+        </div>
+        <div id="loader_div" style="display: none; justify-content: center; align-items: center;">
+            <div class="loader"></div>
+        </div>
+    </form>
+
+
+</body>
+<script>
+    function hideDiv() {
+  document.getElementById("content_div").style.display = "none";
+  document.getElementById("loader_div").style.display = "flex";
+}
+window.onload = function() {
+			var downloadLink = document.getElementById('csv_link');
+            console.log('Download Link', downloadLink)
+			downloadLink.click();
+		};
+</script>
+</html>

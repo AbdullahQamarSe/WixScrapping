@@ -1,0 +1,6 @@
+# Ignore pycache files
+myapp/__pycache__/
+__pycache__/
+venv/
+env/
+static/*.csv

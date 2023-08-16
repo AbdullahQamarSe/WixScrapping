@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% load static %}
+{% block name %}
+<h1 class="text-center"></h1>
+{% endblock name %}
+{% block content %}
+<div class="col-md-4">
+  <div class="card">
+    <img src="{% static 'images/ebay.png' %}" class="card-img" alt="Image 1">
+    <div class="card-body">
+      <a href="{% url 'ebay' %}" class="card-link btn btn-primary text-white">Ebay</a>
+    </div>
+  </div>
+</div>
+<div class="col-md-4">
+  <div class="card">
+    <img src="{% static 'images/Fashionphile.jpg' %}" class="card-img" alt="Image 2">
+    <div class="card-body">
+      <a href="{% url 'home' %}" class="card-link btn btn-primary text-white">Fashionphile</a>
+    </div>
+  </div>
+</div>
+<div class="col-md-4">
+  <div class="card">
+    <img src="{% static 'images/maisondeluxe.jpg' %}" class="card-img" alt="Image 3">
+    <div class="card-body">
+      <a href="{% url 'maisondeluxe' %}" class="card-link btn btn-primary text-white">Maison Deluxe</a>
+    </div>
+  </div>
+</div>
+<div class="col-md-4">
+  <div class="card">
+    <img src="{% static 'images/madison.jpg' %}" class="card-img" alt="Image 3">
+    <div class="card-body">
+      <a href="{% url 'madison' %}" class="card-link btn btn-primary text-white">Madison</a>
+    </div>
+  </div>
+</div>
+<div class="col-md-4">
+  <div class="card">
+    <img src="{% static 'images/Rebag.jpg' %}" class="card-img" alt="Image 3">
+    <div class="card-body">
+      <a href="{% url 'rebag' %}" class="card-link btn btn-primary text-white">Rebag</a>
+    </div>
+  </div>
+</div>
+<div class="col-md-4">
+  <div class="card">
+    <img src="{% static 'images/firstDibs.jpg' %}" class="card-img" alt="Image 3">
+    <div class="card-body">
+      <a href="{% url 'firstdibs' %}" class="card-link btn btn-primary text-white">1stDibs</a>
+    </div>
+  </div>
+</div>
+
+{% endblock  %} 

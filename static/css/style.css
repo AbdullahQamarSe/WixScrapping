@@ -1,0 +1,73 @@
+.card {
+  display: flex;
+  align-items: center;
+  padding: 1rem;
+}
+
+.card .card-img {
+  flex: 0 0 auto;
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+}
+
+.card .card-body {
+  flex: 1 1 auto;
+}
+.card-link{
+  color: #000;
+  font-size: 20px;
+  text-decoration: none;
+}
+
+.btn-primary{
+  background-color:#008CBA;
+  padding: 10px;
+}
+
+.loader {
+  border: 16px solid #f3f3f3;
+  border-radius: 50%;
+  border-top: 16px solid #3498db;
+  width: 120px;
+  height: 120px;
+  -webkit-animation: spin 2s linear infinite; /* Safari */
+  animation: spin 2s linear infinite;
+}
+
+.choose_us_form{
+  margin-top: 20px;
+  margin-bottom: 20px;
+  background-color: #f3f3f3;
+  padding: 20px;
+  box-shadow:  0 0 10px #000000;
+  border-radius: 10px;
+}
+label{
+  font-size: 20px;
+  font-weight: bold;
+}
+input[type=file]::file-selector-button {
+  margin-right: 20px;
+  border: none;
+  background: #084cdf;
+  padding: 10px 20px;
+  border-radius: 5px;
+  color: #fff;
+  cursor: pointer;
+  transition: background .2s ease-in-out;
+}
+
+input[type=file]::file-selector-button:hover {
+  background: #0d45a5;
+}
+/* Safari */
+@-webkit-keyframes spin {
+  0% { -webkit-transform: rotate(0deg); }
+  100% { -webkit-transform: rotate(360deg); }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

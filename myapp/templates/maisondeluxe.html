@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% load static %}
+{% block name %}
+<h1 class="text-center text-success">maisondeluxe</h1>
+{% endblock name %}
+{% block content %}
+<div class="col-md-8 offset-2">
+    <form action="{% url 'maisondeluxe' %}" method="post" onsubmit="hideDiv()" class='choose_us_form'>
+        {% csrf_token %}
+        <div id="content_div" style="display: flex; justify-content: center;">
+                <button type="submit" class='btn btn-primary text-white'>Start Scraping</button>
+        </div>
+        </div>
+        <div id="loader_div" style="display: none; justify-content: center; align-items: center;">
+            <div class="loader"></div>
+        </div>
+    </form>
+</div>
+{% endblock content %}
+
+<script>
+    function hideDiv() {
+        document.getElementById("content_div").style.display = "none";
+        document.getElementById("loader_div").style.display = "flex";
+    }
+    window.onload = function() {
+        var downloadLink = document.getElementById('csv_link');
+        console.log('Download Link', downloadLink)
+        downloadLink.click();
+    };
+</script>
