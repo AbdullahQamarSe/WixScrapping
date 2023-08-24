@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from selenium.webdriver.chrome.options import Options
 import re
+import os
 import csv
 import time
 import random
@@ -12,7 +13,8 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-
+import random
+import string
 from selenium_stealth import stealth
 from webdriver_manager.chrome import ChromeDriverManager
 # Create your views here.
@@ -25,6 +27,13 @@ import requests
 from bs4 import BeautifulSoup
 from selenium.webdriver.support.ui import WebDriverWait
 from urllib.parse import urlparse, parse_qs, urlencode,urlunparse,unquote,urljoin
+
+
+
+import requests
+from urllib.parse import quote_plus
+from bs4 import BeautifulSoup
+
 
 
 def main(csvreader):
@@ -193,27 +202,36 @@ def home(request):
     return render(request, 'fashionphile.html')
 
 
+def remove_non_bmp_characters(input_string):
+    return ''.join(char for char in input_string if ord(char) <= 0xFFFF)
 
 
 
 
 
-
-def search_madison(search_query, driver):
-    search_query = search_query.replace(',',' ')
-    print('--- Search Function ---', search_query)
+def search_madison(row, driver):
+    # Extract the first three words from the search_query
+    first_three_words = ' '.join(row.split()[:3])
+    print('--- Search Function ---', first_three_words)
     driver.get("https://www.madisonavenuecouture.com/")
-    #search
-    time.sleep(2)    
+    
+    # Other code for searching, waiting, and interacting with the page elements
+    # ...
+
+    # Update the input element with the first three words
     WebDriverWait(driver, 50).until(EC.presence_of_element_located((By.XPATH, '/html/body/div[1]/div[1]/header/div[3]/div/div[2]/div[2]/div/div[3]/div[1]/div/div/div[1]/form/input[2]')))
     input_element = driver.find_element(By.XPATH, '/html/body/div[1]/div[1]/header/div[3]/div/div[2]/div[2]/div/div[3]/div[1]/div/div/div[1]/form/input[2]')
     input_element.send_keys(Keys.CONTROL + "a")  # Select all text
     input_element.send_keys(Keys.DELETE)         # Delete selected text
-    # input_element.clear()
-    time.sleep(5)
+    time.sleep(2)
+    
+    # Send the first three words to the input element
     WebDriverWait(driver, 50).until(EC.element_to_be_clickable((By.XPATH, '/html/body/div[1]/div[1]/header/div[3]/div/div[2]/div[2]/div/div[3]/div[1]/div/div/div[1]/form/input[2]')))
-    input_element.send_keys(search_query)
+    input_element.send_keys(remove_non_bmp_characters(first_three_words))
+    
+    # Click the search button
     driver.find_element(By.XPATH, '/html/body/div[1]/div[1]/header/div[3]/div/div[2]/div[2]/div/div[3]/div[1]/div/div/div[1]/form/button').click()
+
 
 def close_modal_dialog(driver):
     
@@ -237,43 +255,45 @@ def close_modal_dialog(driver):
     except Exception as e:
         print('Exception occurred:', str(e))
 
-def search_rebag(search_queries, driver):
-    for search_query in search_queries:
-        print("hello",search_queries)
-        # Convert the search_query list to a single string
-        search_query_str = ','.join(search_query)
-        search_query_str = search_query_str.replace(',',' ')
-
-        print('--- Search Function ---', search_query)
+def search_rebag(query, driver):
+        
+        print("hello", query)
 
         driver.get("https://shop.rebag.com/search?")
-        #search
-        time.sleep(10)
+        time.sleep(3)
         body_element = driver.find_element(By.TAG_NAME, 'body')
         body_element.click()
-        time.sleep(5)
+        time.sleep(3)
         close_modal_dialog(driver)
-        # time.sleep(10) 
-        try:   
-            time.sleep(10)
-            # WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '/html/body/header/div/div/div[2]/div/div/div[1]/div/form/div/input')))
+        
+        try:
+            time.sleep(3)
             try:
                 input_element = driver.find_element(By.XPATH, '/html/body/div[2]/header/div/div/div[2]/div/div/div[1]/div/form/div/input')
             except:
                 input_element = driver.find_element(By.XPATH, '/html/body/div[2]/header/div/div/div[2]/div/div/div[1]/div/form/div/input')
 
-            input_element.send_keys(Keys.CONTROL + "a")  # Select all text
-            input_element.send_keys(Keys.DELETE)         # Delete selected text
+            input_element.send_keys(Keys.CONTROL + "a")
+            input_element.send_keys(Keys.DELETE)
 
-            # input_element.clear()
-            # time.sleep(5)
-            # WebDriverWait(driver, 50).until(EC.element_to_be_clickable((By.XPATH, '/html/body/div[2]/header[2]/div/div/div[2]/div/div/div[1]/div/form/div/input')))
-            input_element.send_keys(search_query, Keys.RETURN)
+            # Convert list elements to strings and join them
+            search_query_parts = query.split()
+            # Extract the desired parts from the split query parts
+            result_parts = search_query_parts[:3] + search_query_parts[5:6]  # Extract specific parts
+            result_string = " ".join(result_parts)
+            input_element.send_keys(result_string, Keys.RETURN)
+
+
+
+            print("working", result_string)
+
             WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.CLASS_NAME, 'plp__products-grid-container')))
             print('Search Done for Rebag')
-            break
+
         except Exception as e:
-            print('<------ Access Denied ------>',e)
+            print('<------ Access Denied ------>', e)
+
+
 
 
 def search_firstdibs(search_query, driver):
@@ -281,17 +301,15 @@ def search_firstdibs(search_query, driver):
     driver.get("https://1stdibs.com")
     #search
     time.sleep(5) 
-    while 1:
-        try:
-            WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, '/html/body/div[1]/header/div[1]/div[2]/div/div[1]/div/form/div/div/div/div/div[1]/div/input')))
-            input_element = driver.find_element(By.XPATH, '/html/body/div[1]/header/div[1]/div[2]/div/div[1]/div/form/div/div/div/div/div[1]/div/input')
-            input_element.clear()
-            WebDriverWait(driver, 50).until(EC.element_to_be_clickable((By.XPATH, '/html/body/div[1]/header/div[1]/div[2]/div/div[1]/div/form/div/div/div/div/div[1]/div/input')))
-            input_element.send_keys(search_query)
-            driver.find_element(By.XPATH, '/html/body/div[1]/header/div[1]/div[2]/div/div[1]/div/form/div/div/div/div/div[2]/div[2]/button').click()
-            break
-        except Exception as e:
-            print('<------ Access Denied in search 1sdibs ------>',e)
+    try:
+        WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, '/html/body/div[1]/header/div[1]/div[2]/div/div[1]/div/form/div/div/div/div/div[1]/div/input')))
+        input_element = driver.find_element(By.XPATH, '/html/body/div[1]/header/div[1]/div[2]/div/div[1]/div/form/div/div/div/div/div[1]/div/input')
+        input_element.clear()
+        WebDriverWait(driver, 50).until(EC.element_to_be_clickable((By.XPATH, '/html/body/div[1]/header/div[1]/div[2]/div/div[1]/div/form/div/div/div/div/div[1]/div/input')))
+        input_element.send_keys(search_query)
+        driver.find_element(By.XPATH, '/html/body/div[1]/header/div[1]/div[2]/div/div[1]/div/form/div/div/div/div/div[2]/div[2]/button').click()
+    except Exception as e:
+        print('<------ Access Denied in search 1sdibs ------>',e)
 
 def get_results(driver):
     try:
@@ -359,7 +377,7 @@ def chk_pagination(driver):
 
 
 
-def save_to_csv_firstdibs(scraped_list):
+def save_to_csv_firstdibs(scraped_data_list):
     # Open CSV file for writing
     api_url = 'https://www.wixapis.com/stores/v1/products'
     api_token = 'YOUR_WIX_API_TOKEN'
@@ -370,62 +388,143 @@ def save_to_csv_firstdibs(scraped_list):
             'wix-site-id': 'a4577014-181b-4d27-bb2d-ad476751caef',
         }
     print("game`")
-    print(scraped_list)
-    print(scraped_list[0])
-    print(scraped_list[1][1])
+    print("first dibs working",scraped_data_list)
+    print(scraped_data_list[0])
+    print(scraped_data_list[1][0])
+    print(scraped_data_list[1][1])
+    print(scraped_data_list[1][2])
+    
 
-    price1 = price_str_to_int(scraped_list[1][1])
-    price2 = price_str_to_int(scraped_list[2][1])
-    price3 = price_str_to_int(scraped_list[3][1])
-
+    price1 = price_str_to_int(scraped_data_list[1][1])
     json_data = {
         'product': {
-            'name': scraped_list[1][0],
+            'name': scraped_data_list[1][0],
             'productType': 'physical',
             'priceData': {
                 'price': price1,
             },
-            'condition': scraped_list[1][2],
+            'condition': scraped_data_list[1][2],
             # Add other fields as needed for the Wix API
         }
     }
+    image= scraped_data_list[1][3]
 
     response = requests.post(api_url, headers=headers, json=json_data)
     print(response)
+    response_data = response.json()
+    # Extract the product ID from the response content
+    extracted_product_id = response_data['product']['id']
+    print(extracted_product_id)
+    json_data = {
+        'media': [
+            {
+                'mediaId': '19620272_1687322489998.jpg',
+            },
+            {
+                'url': image,
+            },
+            {
+                'mediaId': '19620272_1687322489998',
+            },
+        ],
+    }
+    response = requests.post(
+        f'https://www.wixapis.com/stores/v1/products/{extracted_product_id}/media',
+        headers=headers,
+        json=json_data,
+    )
+    print(response.status_code)
+    print(response.json())
+
+    csv_file_path = 'output_datafirst.csv'  # Change to your desired CSV file path
+    # Check if the CSV file already exists
+    file_exists = os.path.isfile(csv_file_path)
+
+    # Open the CSV file in the appropriate mode
+    with open(csv_file_path, mode='a' if file_exists else 'w', newline='', encoding='utf-8') as csv_file:
+        writer = csv.writer(csv_file)
+
+        if not file_exists:
+            writer.writerow(['Image', 'Title', 'Price', 'Condition'])  # Write header row
+
+        for scrapped_data in scraped_data_list:
+            Condition = scrapped_data[2]  # Use the current scrapped_data instead of the entire list
+            title = scrapped_data[0]
+            price = scrapped_data[1]
+            writer.writerow([image, title, price, Condition])
 
 def save_to_csv_madison(scraped_list):
 
     api_url = 'https://www.wixapis.com/stores/v1/products'
     api_token = 'YOUR_WIX_API_TOKEN'
-    print("gere")
+
     headers = {
-            'Content-Type': 'application/json',
-            'Authorization': 'IST.eyJraWQiOiJQb3pIX2FDMiIsImFsZyI6IlJTMjU2In0.eyJkYXRhIjoie1wiaWRcIjpcIjYzYzA5MDk4LTk1M2ItNDJmOC1iOWUyLWY3NWM0NmJjZGI0ZFwiLFwiaWRlbnRpdHlcIjp7XCJ0eXBlXCI6XCJhcHBsaWNhdGlvblwiLFwiaWRcIjpcImNiZWEwNTJiLWM3YjctNGY2Ny1hNTE2LTM5ZGQwMjhhMjJkMlwifSxcInRlbmFudFwiOntcInR5cGVcIjpcImFjY291bnRcIixcImlkXCI6XCI4ODA1ZDA2MC03NjA4LTQ0NzYtYTMzYS03ODA0YWM0YzZhMmNcIn19IiwiaWF0IjoxNjkyMTI2OTk5fQ.fdAs9YtidmgITS1B_DYr6YmKuGyUMjPDpRj-L-FWl_qwYVcrW4sZMSvdyPVOSe32gqKLbm0t8MzeIb1cUs8D_Tz1tXoWEeZLoQODwXNQ6eqniMEhJrKkekEh5KlguyDNcEKIWgxkeeIeVqk7BDAGrZvv-f6XNgyxlVw4KWHL3006XGsk9W182vpKd3I1_1l1_zSdfYQrnoFjQRCw-sU_HYaL8wvIf-PMD8ufjswe4GyGPmUgzHN6uYijLZ7yac6m22AI6B1nVNnSDoUb0DWa_6bkcb4mFMca4ji7uq4A3BcTqeJtd7sQzdGYu0RiFaU5pe3fU5rCXqgrNNjeAfXWgw',
-            'wix-site-id': 'a4577014-181b-4d27-bb2d-ad476751caef',
-        }
-    print("game`")
-    print(scraped_list)
-    print(scraped_list[0])
-    print(scraped_list[1][1])
-
-    price1 = price_str_to_int(scraped_list[1][1])
-    price2 = price_str_to_int(scraped_list[2][1])
-    price3 = price_str_to_int(scraped_list[3][1])
-
-    json_data = {
-        'product': {
-            'name': scraped_list[1][0],
-            'productType': 'physical',
-            'priceData': {
-                'price': price1,
-            },
-            'condition': scraped_list[1][2],
-            # Add other fields as needed for the Wix API
-        }
+        'Content-Type': 'application/json',
+        'Authorization': 'IST.eyJraWQiOiJQb3pIX2FDMiIsImFsZyI6IlJTMjU2In0.eyJkYXRhIjoie1wiaWRcIjpcIjYzYzA5MDk4LTk1M2ItNDJmOC1iOWUyLWY3NWM0NmJjZGI0ZFwiLFwiaWRlbnRpdHlcIjp7XCJ0eXBlXCI6XCJhcHBsaWNhdGlvblwiLFwiaWRcIjpcImNiZWEwNTJiLWM3YjctNGY2Ny1hNTE2LTM5ZGQwMjhhMjJkMlwifSxcInRlbmFudFwiOntcInR5cGVcIjpcImFjY291bnRcIixcImlkXCI6XCI4ODA1ZDA2MC03NjA4LTQ0NzYtYTMzYS03ODA0YWM0YzZhMmNcIn19IiwiaWF0IjoxNjkyMTI2OTk5fQ.fdAs9YtidmgITS1B_DYr6YmKuGyUMjPDpRj-L-FWl_qwYVcrW4sZMSvdyPVOSe32gqKLbm0t8MzeIb1cUs8D_Tz1tXoWEeZLoQODwXNQ6eqniMEhJrKkekEh5KlguyDNcEKIWgxkeeIeVqk7BDAGrZvv-f6XNgyxlVw4KWHL3006XGsk9W182vpKd3I1_1l1_zSdfYQrnoFjQRCw-sU_HYaL8wvIf-PMD8ufjswe4GyGPmUgzHN6uYijLZ7yac6m22AI6B1nVNnSDoUb0DWa_6bkcb4mFMca4ji7uq4A3BcTqeJtd7sQzdGYu0RiFaU5pe3fU5rCXqgrNNjeAfXWgw',
+        'wix-site-id': 'a4577014-181b-4d27-bb2d-ad476751caef',
     }
 
-    response = requests.post(api_url, headers=headers, json=json_data)
-    print(response)
+    data_to_write = []  # This list will store the data for CSV
+
+    for scraped_item in scraped_list:
+        try:
+            print("get here")
+            prod_name = scraped_item[0]
+            prod_price_str = scraped_item[1]
+            prod_condition = scraped_item[2]
+            prod_image = scraped_item[3]
+
+            numeric_part = re.search(r'\d+(,\d{3})*\.\d+', prod_price_str).group()
+            prod_price = float(numeric_part.replace(',', ''))
+
+            json_data = {
+                'product': {
+                    'name': prod_name,
+                    'productType': 'physical',
+                    'priceData': {
+                        'price': prod_price,
+                    },
+                    'condition': prod_condition,
+                }
+            }
+
+            response = requests.post(api_url, headers=headers, json=json_data)
+            print(response.content)
+            response_data = response.json()
+            extracted_product_id = response_data['product']['id']
+
+            url1 = 'https:' + prod_image
+            json_data1 = {
+                'media': [
+                    {
+                        'mediaId': '19620272_1687322489998.jpg',
+                    },
+                    {
+                        'url': url1,
+                    },
+                    {
+                        'mediaId': '19620272_1687322489998',
+                    },
+                ],
+            }
+
+            response = requests.post(
+                f'https://www.wixapis.com/stores/v1/products/{extracted_product_id}/media',
+                headers=headers,
+                json=json_data1,
+            )
+
+            # Append data to the list for CSV
+            data_to_write.append([prod_name, prod_price_str, prod_condition, prod_image, extracted_product_id])
+        except Exception as e:
+            print(e)
+            continue
+    # Save data to CSV file
+    with open('product_datamadison.csv', 'w', newline='') as csv_file:
+        csv_writer = csv.writer(csv_file)
+        csv_writer.writerow(['Name', 'Price', 'Condition', 'Image', 'Product ID'])  # Writing header
+        csv_writer.writerows(data_to_write)
+
 
 import re
 
@@ -445,11 +544,11 @@ def price_str_to_int(price_str):
     return int(float(price_str))
 
 
-def save_to_csv_rebag(scraped_list,image_element1,image_element2,image_element3):
+def save_to_csv_rebag(scraped_list):
     api_url = 'https://www.wixapis.com/stores/v1/products'
     api_token = 'YOUR_WIX_API_TOKEN'
     print("gere")
-
+    
     headers = {
             'Content-Type': 'application/json',
             'Authorization': 'IST.eyJraWQiOiJQb3pIX2FDMiIsImFsZyI6IlJTMjU2In0.eyJkYXRhIjoie1wiaWRcIjpcIjYzYzA5MDk4LTk1M2ItNDJmOC1iOWUyLWY3NWM0NmJjZGI0ZFwiLFwiaWRlbnRpdHlcIjp7XCJ0eXBlXCI6XCJhcHBsaWNhdGlvblwiLFwiaWRcIjpcImNiZWEwNTJiLWM3YjctNGY2Ny1hNTE2LTM5ZGQwMjhhMjJkMlwifSxcInRlbmFudFwiOntcInR5cGVcIjpcImFjY291bnRcIixcImlkXCI6XCI4ODA1ZDA2MC03NjA4LTQ0NzYtYTMzYS03ODA0YWM0YzZhMmNcIn19IiwiaWF0IjoxNjkyMTI2OTk5fQ.fdAs9YtidmgITS1B_DYr6YmKuGyUMjPDpRj-L-FWl_qwYVcrW4sZMSvdyPVOSe32gqKLbm0t8MzeIb1cUs8D_Tz1tXoWEeZLoQODwXNQ6eqniMEhJrKkekEh5KlguyDNcEKIWgxkeeIeVqk7BDAGrZvv-f6XNgyxlVw4KWHL3006XGsk9W182vpKd3I1_1l1_zSdfYQrnoFjQRCw-sU_HYaL8wvIf-PMD8ufjswe4GyGPmUgzHN6uYijLZ7yac6m22AI6B1nVNnSDoUb0DWa_6bkcb4mFMca4ji7uq4A3BcTqeJtd7sQzdGYu0RiFaU5pe3fU5rCXqgrNNjeAfXWgw',
@@ -463,15 +562,22 @@ def save_to_csv_rebag(scraped_list,image_element1,image_element2,image_element3)
     price1 = price_str_to_int(scraped_list[1][1])
     price2 = price_str_to_int(scraped_list[2][1])
     price3 = price_str_to_int(scraped_list[3][1])
+    price4 = price_str_to_int(scraped_list[4][1])
 
-    image1 = image_element1.get_attribute('src')
-    image2 = image_element2.get_attribute('src')
-    image3 = image_element3.get_attribute('src')
+    image1 = scraped_list[1][3]
+    image2 = scraped_list[2][3]
+    image3 = scraped_list[3][3]
+    image4 = scraped_list[4][3]
+
+
+
+    print(image1,image2,image3,image4)
+
 
     # Adding the image URL to the existing JSON data structure
     json_data = {
     'product': {
-        'name': scraped_list[1][0],
+        'name': "Hermes "+ scraped_list[1][0],
         'productType': 'physical',
         'priceData': {
             'price': price1,
@@ -482,10 +588,10 @@ def save_to_csv_rebag(scraped_list,image_element1,image_element2,image_element3)
 
     json_data1 = {
     'product': {
-        'name': scraped_list[2][0],
+        'name': "Hermes "+ scraped_list[2][0],
         'productType': 'physical',
         'priceData': {
-            'price': price1,
+            'price': price2,
         },
         'condition': scraped_list[2][2],
     },
@@ -493,10 +599,10 @@ def save_to_csv_rebag(scraped_list,image_element1,image_element2,image_element3)
 
     json_data2 = {
     'product': {
-        'name': scraped_list[3][0],
+        'name': "Hermes "+ scraped_list[3][0],
         'productType': 'physical',
         'priceData': {
-            'price': price1,
+            'price': price3,
         },
         'condition': scraped_list[3][2],
     },
@@ -504,10 +610,10 @@ def save_to_csv_rebag(scraped_list,image_element1,image_element2,image_element3)
 
     json_data3 = {
     'product': {
-        'name': scraped_list[4][0],
+        'name': "Hermes "+ scraped_list[4][0],
         'productType': 'physical',
         'priceData': {
-            'price': price1,
+            'price': price4,
         },
         'condition': scraped_list[4][2],
     },
@@ -516,7 +622,7 @@ def save_to_csv_rebag(scraped_list,image_element1,image_element2,image_element3)
     response1 = requests.post(api_url, headers=headers, json=json_data)
     response2 = requests.post(api_url, headers=headers, json=json_data1)
     response3 = requests.post(api_url, headers=headers, json=json_data2)
-    response4 = requests.post(api_url, headers=headers, json=json_data2)
+    response4 = requests.post(api_url, headers=headers, json=json_data3)
 
 
     print(f'Status code: {response1.status_code}')
@@ -525,6 +631,105 @@ def save_to_csv_rebag(scraped_list,image_element1,image_element2,image_element3)
     print(f'Status code: {response4.status_code}')
     print(f'Response: {response1.json()}')
 
+
+    response_data1 = response1.json()
+    extracted_product_id1 = response_data1['product']['id']
+    print(extracted_product_id1)
+    json_data = {
+        'media': [
+            {
+                'mediaId': '19620272_1687322489998.jpg',
+            },
+            {
+                'url': image1,
+            },
+            {
+                'mediaId': '19620272_1687322489998',
+            },
+        ],
+    }
+    response11 = requests.post(
+        f'https://www.wixapis.com/stores/v1/products/{extracted_product_id1}/media',
+        headers=headers,
+        json=json_data,
+    )
+    print(response11.status_code)
+    print(response11.json())
+
+
+    response_data2 = response2.json()
+    extracted_product_id2 = response_data2['product']['id']
+    print(extracted_product_id2)
+    json_data = {
+        'media': [
+            {
+                'mediaId': '19620272_1687322489998.jpg',
+            },
+            {
+                'url': image2,
+            },
+            {
+                'mediaId': '19620272_1687322489998',
+            },
+        ],
+    }
+    response22 = requests.post(
+        f'https://www.wixapis.com/stores/v1/products/{extracted_product_id2}/media',
+        headers=headers,
+        json=json_data,
+    )
+    print(response22.status_code)
+    print(response22.json())
+
+    response_data3 = response3.json()
+    extracted_product_id3 = response_data3['product']['id']
+    print(extracted_product_id3)
+    json_data = {
+        'media': [
+            {
+                'mediaId': '19620272_1687322489998.jpg',
+            },
+            {
+                'url': image3,
+            },
+            {
+                'mediaId': '19620272_1687322489998',
+            },
+        ],
+    }
+    response = requests.post(
+        f'https://www.wixapis.com/stores/v1/products/{extracted_product_id3}/media',
+        headers=headers,
+        json=json_data,
+    )
+    print(response.status_code)
+    print(response.json())
+
+
+
+    response_data4 = response4.json()
+    extracted_product_id4 = response_data4['product']['id']
+    print(extracted_product_id4)
+    json_data = {
+        'media': [
+            {
+                'mediaId': '19620272_1687322489998.jpg',
+            },
+            {
+                'url': image4,
+            },
+            {
+                'mediaId': '19620272_1687322489998',
+            },
+        ],
+    }
+    response44 = requests.post(
+        f'https://www.wixapis.com/stores/v1/products/{extracted_product_id4}/media',
+        headers=headers,
+        json=json_data,
+    )
+    print(response44.status_code)
+    print(response44.json())
 
 
 def close_modal_dialog_firstdibs(driver):
@@ -559,12 +764,19 @@ def scrapData(scraped_data_list,href,driver,base_url):
     html = driver.page_source
     soup = BeautifulSoup(html, "html.parser")
 
+    description_image= soup.select_one('div[class="col-md-6 product-photos"]')
+    print("description_image",description_image)
     description_element_div = soup.select_one('div[class="col-md-6 product-shop"]')
+
     description_element=description_element_div.find("h1",class_="product-title herm")
     price_element_div = soup.select_one("div[class='prices']")
     price_element=price_element_div.find("span", class_="money")
     condition_element = price_element_div.find("div", class_="product-condition")
 
+    images = description_image.find("img", class_="lazyautosizes lazyloaded")
+
+    print("image",images)
+    image_url = images['src'] if images and 'src' in images.attrs else None
     description = description_element.text.strip() if description_element else None
     price = price_element.text.strip() if price_element else None
     condition = condition_element.text.replace("Condition:", "").strip() if condition_element else None
@@ -572,10 +784,12 @@ def scrapData(scraped_data_list,href,driver,base_url):
     data.append(description)
     data.append(price)
     data.append(condition)
+    data.append(image_url)
     print('---------------------------------------')
     print('Description', description)
     print('price', price)
     print('condition', condition)
+    print('condition', image_url)
 
     # Append the data to the list
     scraped_data_list.append(data)
@@ -597,18 +811,24 @@ def scrapData_firstdibs(scraped_data_list,href,driver,base_url):
     description_element = soup.select_one('div[data-tn="pdp-main-title"]')
     price_element = soup.select_one("span[data-tn='price-amount']")
     condition_element = soup.select_one("span[data-tn='pdp-spec-detail-condition']")
+    images = soup.select_one("img[class='_cfe61f48 _b62d9092']")
+    print("images",images)
 
+    image_url = images['src'] if images and 'src' in images.attrs else None
     description = description_element.text if description_element else None
     price = price_element.text if price_element else None
     condition = condition_element.text if condition_element else None
+
     data=[]
     data.append(description)
     data.append(price)
     data.append(condition)
+    data.append(image_url)
     print('---------------------------------------------')
     print('description', description)
     print('Price', price)
     print('condition', condition)
+    print('image', image_url)
     # Append the data to the list
     scraped_data_list.append(data)
 
@@ -624,73 +844,78 @@ def start_process_firstdibs(search_queries, driver):
     next_button_status=True
     search_result_url=""
     
-    for query in search_queries:
-        search_firstdibs(query, driver)
-        time.sleep(5)
-        try:
-            close_modal_dialog_firstdibs(driver)
-        except Exception as e:
-            print('<------ Access Denied ins start of query------>',e)
-        time.sleep(2)
-        searched_url=driver.current_url
-        p=1
-        # next_button=soup.find('a', {'data-tn': 'page-forward'})
-        while next_button_status==True:
-            if page_number>1:
-                driver.get(next_button)
-                searched_url=next_button
-                time.sleep(5)
-                try:
-                    close_modal_dialog_firstdibs(driver)
-                except Exception as e:
-                    print('<------ Access Denied  ------>',e)
-             
-
-            # get relevant div and extract links in href_list
-            html=driver.page_source
-            soup = BeautifulSoup(html, "html.parser")
-            div_elements = soup.find_all('div', {'class': '_95b421a2'})
-            #Print the div_element to see its content
-            if div_elements:
-                    i=1
-                    for div_element in div_elements:
-                        a_tag = div_element.find('a', {'href': True, 'class': '_9e04a611 _9f85bf45 _f7a3e2b1'})
-
-                        if a_tag:
-                            search_result_url = a_tag['href']
-                            full_url = urljoin(base_url, search_result_url)
-                            scrapData_firstdibs(scraped_data_list,full_url,driver,base_url)
-                            
-                    save_to_csv_firstdibs(scraped_data_list)
-            else:
-                print("No div element found ")
-                break
-            p+=1
-            
-            page_number+=1
-            driver.get(searched_url)
-            time.sleep(10)
+    
+    search_firstdibs(search_queries, driver)
+    time.sleep(2)
+    try:
+        close_modal_dialog_firstdibs(driver)
+    except Exception as e:
+        print('<------ Access Denied ins start of query------>',e)
+    time.sleep(2)
+    searched_url=driver.current_url
+    p=1
+    # next_button=soup.find('a', {'data-tn': 'page-forward'})
+    while next_button_status==True:
+        if page_number>1:
+            driver.get(next_button)
+            searched_url=next_button
+            time.sleep(2)
             try:
                 close_modal_dialog_firstdibs(driver)
             except Exception as e:
                 print('<------ Access Denied  ------>',e)
-                driver.get(searched_url)
-             
+            
 
-            # next_button = driver.find_element(By.CSS_SELECTOR,'button.findify-widget--pagination__next')
-            next_button=soup.find('a', {'data-tn': 'page-forward'})
-            if next_button:
-                next_button=next_button['href']
-                next_button = urljoin(base_url, next_button)
-            else:
-                next_button_status=False
-        page_number=1
-        next_button_status=True    
-        print("all data in while scrapped successfully...")
+        # get relevant div and extract links in href_list
+        html=driver.page_source
+        soup = BeautifulSoup(html, "html.parser")
+        div_elements = soup.find_all('div', {'class': '_95b421a2'})
+        #Print the div_element to see its content
+        if div_elements:
+                i=1
+                for div_element in div_elements[:1]:
+                    a_tag = div_element.find('a', {'href': True, 'class': '_9e04a611 _9f85bf45 _f7a3e2b1'})
+
+                    if a_tag:
+                        search_result_url = a_tag['href']
+                        full_url = urljoin(base_url, search_result_url)
+                        scrapData_firstdibs(scraped_data_list,full_url,driver,base_url)
+                        print("check working or not",scraped_data_list)
+                
+        else:
+            print("No div element found ")
+            break
+        p+=1
+        
+        
+        page_number+=1
+        driver.get(searched_url)
+        time.sleep(2)
+        try:
+            close_modal_dialog_firstdibs(driver)
+        except Exception as e:
+            print('<------ Access Denied  ------>',e)
+            driver.get(searched_url)
+            
+
+        # next_button = driver.find_element(By.CSS_SELECTOR,'button.findify-widget--pagination__next')
+        next_button=soup.find('a', {'data-tn': 'page-forward'})
+        if next_button:
+            next_button=next_button['href']
+            next_button = urljoin(base_url, next_button)
+        else:
+            next_button_status=False
+    page_number=1
+    next_button_status=True 
+    print(scraped_data_list)
+    
+       
+    print("all data in while scrapped successfully...")
     print("  for loop ends for query")
+    save_to_csv_firstdibs(scraped_data_list)
 
-    file_path = save_to_csv_firstdibs(scraped_data_list)
-    return file_path
+    
+    return
 
 def start_process_rebag(search_queries, driver):
     print(" in rebag process function")
@@ -703,11 +928,11 @@ def start_process_rebag(search_queries, driver):
     searched_url=""
     
     for query in search_queries:
-        
+        print(query)
         search_rebag(query, driver)
         # time.sleep(10)
         # close_modal_dialog(driver)
-        time.sleep(10)
+        time.sleep(4)
         search_result_url=driver.current_url
         # p=1
         while next_button_status=='false':
@@ -717,7 +942,7 @@ def start_process_rebag(search_queries, driver):
                 # Modify the URL to include the page number
                 modified_url = f"{search_result_url}&page={page_number}"
                 driver.get(modified_url)
-                time.sleep(10)
+                time.sleep(4)
                 close_modal_dialog(driver)
                 WebDriverWait(driver, 50).until(EC.presence_of_element_located((By.CLASS_NAME, 'plp__products-grid-container')))
                 productGrid=driver.find_element(By.CLASS_NAME, 'plp__products-grid-container')
@@ -727,9 +952,6 @@ def start_process_rebag(search_queries, driver):
             soup = BeautifulSoup(html, "html.parser")
             div_elements=[]
             div_elements = soup.find_all('div', {'class': 'plp-product'})
-            image_element1 = driver.find_element(By.XPATH, f'/html/body/div[2]/div/section/div[5]/div/div/div[2]/div[2]/div[2]/div[1]/a/div[2]/img')
-            image_element2 = driver.find_element(By.XPATH, f'/html/body/div[2]/div/section/div[5]/div/div/div[2]/div[2]/div[2]/div[2]/a/div[2]/img')
-            image_element3 = driver.find_element(By.XPATH, f'/html/body/div[2]/div/section/div[5]/div/div/div[2]/div[2]/div[2]/div[3]/a/div[2]/img')
             
             #Print the div_element to see its content
             # print(div_elements) 
@@ -737,20 +959,44 @@ def start_process_rebag(search_queries, driver):
             if div_elements:
                 
                 for div_element in div_elements:
+
+                    print("image image")
+                    image_element = div_element.find('img', {'class': 'products-carousel__card-image'})
+
+                    if image_element is not None:
+                        print("image image image image")
+                        image2 = image_element.get('src')
+                        print("image image image image")
+                    else:
+                        print("Image element not found.")
+
+                    # Rest of your code...
+
+
+
+
+
+
                     title_element = div_element.find('span', {'class': 'products-carousel__card-title'})
                     title_element_text=title_element.text.strip()
+
                     condition_element = div_element.find('span', {'class': 'products-carousel__card-condition'})
                     condition_element_text=condition_element.text.strip()
+
                     price_element = div_element.find('span', {'class': 'products-carousel__card-price'})
                     price_element_text=price_element.text.strip()
+
                     data=[]
                     data.append(title_element_text)
                     data.append(price_element_text)
                     data.append(condition_element_text)
+                    data.append(image2)
+
                     print('-------------------')
                     print('description', title_element_text)
                     print('price', price_element_text)
                     print('condition', condition_element_text)
+                    print('image', image2)
                     scraped_data_list.append(data)
                     print(str(data))
                     query=""
@@ -761,7 +1007,8 @@ def start_process_rebag(search_queries, driver):
             # print("i -  :"+str(i))
             # if i==3:
             #     break
-            save_to_csv_rebag(scraped_data_list,image_element1,image_element2,image_element3)
+
+            
             page_number +=1
             # Check if there is a next page
             next_page_element = soup.find('a', {'class': 'rbg-pagination__next'})
@@ -777,89 +1024,92 @@ def start_process_rebag(search_queries, driver):
         next_button_status='false' 
         page_number =1     
         print(str(query)+" has run succesfully")
+        save_to_csv_rebag(scraped_data_list)
     print("  for loop ends for query")
     print("Data to be saved:", scraped_data_list[1:])  # Print the data without headers
-    save_to_csv_rebag(scraped_data_list[1:],image_element1,image_element2,image_element3)  # Pass the data without headers to the function
-    file_path = save_to_csv_rebag(scraped_data_list)
-    return file_path
 
-def start_process_madison(search_queries, driver):
+    return 
+
+def start_process_madison(row, driver):
+    print("search_queries",row)
+
     print("in madison view process function ")
     base_url="https://www.madisonavenuecouture.com/"
     scraped_data_list=[]
     
     csv_haeding = ['Description', 'Price', 'Condition']
-    scraped_data_list.append(csv_haeding)
+    # scraped_data_list.append(csv_haeding)
     
     next_button_status=True
     searched_url=""
-    for query in search_queries:
-        search_madison(query, driver)
-        searched_url=driver.current_url
-        time.sleep(5)
-        # p=1
-        while next_button_status==True:
-            if searched_url != driver.current_url and searched_url!="":
-                driver.get(searched_url)
-            # Find the iframe element
-            iframe = driver.find_element(By.CSS_SELECTOR,'iframe[data-reactroot=""]')
-            # Switch to the iframe
-            driver.switch_to.frame(iframe)
-            # get relevant div and extract links in href_list
-            html=driver.page_source
-            soup = BeautifulSoup(html, "html.parser")
-            div_elements = soup.find_all('a', {'class': 'findify-widget--product _1anW_'})
-            #Print the div_element to see its content
-            if div_elements:
-                    for div in div_elements:
-                        if div:
-                            search_result_url = div['href']
-                            
-                            full_url = urljoin(base_url, search_result_url)
-                            scrapData(scraped_data_list,full_url,driver,base_url)
-                            
-                    save_to_csv_madison(scraped_data_list)
-            else:
-                print("No div element found ")
-                break
-        
+
+    search_madison(row, driver)
+    searched_url=driver.current_url
+    time.sleep(3)
+    # p=1
+    while next_button_status==True:
+        if searched_url != driver.current_url and searched_url!="":
             driver.get(searched_url)
+        # Find the iframe element
+        iframe = driver.find_element(By.CSS_SELECTOR,'iframe[data-reactroot=""]')
+        # Switch to the iframe
+        driver.switch_to.frame(iframe)
+        # get relevant div and extract links in href_list
+        html=driver.page_source
+        soup = BeautifulSoup(html, "html.parser")
+        div_elements = soup.find_all('a', {'class': 'findify-widget--product _1anW_'})
+        #Print the div_element to see its content
+        if div_elements:
+                for div in div_elements[:5]:
+                    if div:
+                        search_result_url = div['href']
+                        
+                        full_url = urljoin(base_url, search_result_url)
+                        scraped_data_list = scrapData(scraped_data_list,full_url,driver,base_url)
+                print('Scrapped Data List',scraped_data_list)           
+        else:
+            print("No div element found ")
+            break
+    
+        driver.get(searched_url)
 
-            time.sleep(5)
-            next_button=soup.find('button', {'class': 'findify-widget--pagination__next'})
-            if next_button==None:
-                next_button_status=False
+        time.sleep(5)
+        next_button=soup.find('button', {'class': 'findify-widget--pagination__next'})
+        if next_button==None:
+            next_button_status=False
+        else:
+            parsed_url = urlparse(searched_url)
+            query_params = parse_qs(parsed_url.query)
+            findify_limit = query_params.get('findify_limit', [None])[0]
+            findify_offset = query_params.get('findify_offset', [None])[0]
+            if findify_offset==None:
+                findify_offset = findify_limit
+                del query_params['findify_limit']  # Remove findify_limit 
+                query_params['findify_limit'] = findify_limit
+                query_params['findify_offset'] = findify_offset
+
+                query_params_str = urlencode(query_params, doseq=True)
+                decoded_query_params_str = unquote(query_params_str)
+                decoded_query_params_str = decoded_query_params_str.replace('+', '%20')
+
+                modified_url = urlunparse(parsed_url._replace(query=decoded_query_params_str))
+                searched_url=modified_url
+                print(" new url for first time is "+searched_url)
             else:
-                parsed_url = urlparse(searched_url)
-                query_params = parse_qs(parsed_url.query)
-                findify_limit = query_params.get('findify_limit', [None])[0]
-                findify_offset = query_params.get('findify_offset', [None])[0]
-                if findify_offset==None:
-                    findify_offset = findify_limit
-                    del query_params['findify_limit']  # Remove findify_limit 
-                    query_params['findify_limit'] = findify_limit
-                    query_params['findify_offset'] = findify_offset
+                doubled_offset = int(findify_offset) + 24
+                query_params['findify_offset'] = [str(doubled_offset)]
+                query_params_str = urlencode(query_params, doseq=True)
+                modified_url = f"{parsed_url.scheme}://{parsed_url.netloc}{parsed_url.path}?{query_params_str}"
+                searched_url=modified_url
+                print(" new url for first second time is "+searched_url)
 
-                    query_params_str = urlencode(query_params, doseq=True)
-                    decoded_query_params_str = unquote(query_params_str)
-                    decoded_query_params_str = decoded_query_params_str.replace('+', '%20')
-
-                    modified_url = urlunparse(parsed_url._replace(query=decoded_query_params_str))
-                    searched_url=modified_url
-                    print(" new url for first time is "+searched_url)
-                else:
-                    doubled_offset = int(findify_offset) + 24
-                    query_params['findify_offset'] = [str(doubled_offset)]
-                    query_params_str = urlencode(query_params, doseq=True)
-                    modified_url = f"{parsed_url.scheme}://{parsed_url.netloc}{parsed_url.path}?{query_params_str}"
-                    searched_url=modified_url
-                    print(" new url for first second time is "+searched_url)
-        next_button_status=True    
-        driver.get(base_url)
-        print("all data in while scrapped successfully...")
-    print("  for loop ends for query")
-
-    file_path = save_to_csv_madison(scraped_data_list)
+        next_button_status=False 
+    next_button_status=True    
+    driver.get(base_url)
+    print("all data in while scrapped successfully...")
+    print("  for loop ends for query", scraped_data_list)
+    save_to_csv_madison(scraped_data_list)
+    file_path = ''
     return file_path
 
 def read_search_queries():
@@ -919,55 +1169,208 @@ def madison(request):
         print(description_arr[0])
         for row in description_arr[0]:
             print('Product --->>', row)
-        file_path = ''
-        while 1:
+            file_path = ''
             try:
                 chrome_options = uc.ChromeOptions()
                 
-                driver = webdriver.Chrome(executable_path="chromedriver.exe", service=Service(ChromeDriverManager().install()), options=chrome_options)
+                driver = webdriver.Chrome(ChromeDriverManager().install())
                 driver.maximize_window()
                 # driver = uc.Chrome(service=Service(ChromeDriverManager().install()))
                 print('function calling')
                 time.sleep(5)
-                file_path = start_process_madison(description_arr, driver)
+                file_path = start_process_madison(row, driver)
 
                 driver.quit()
                 print('File Path',file_path)
                 file_path = "/" + file_path
-                break
+                continue
             except Exception as e:
                 print('<------ Access Denied ------>',e)
                 driver.quit()
-                time.sleep(10)
+                continue
           
         return render(request, 'madison.html',context={'csv_file':file_path})
     return render(request, 'madison.html')
 
-    
+
 def rebag(request):
     if request.method == 'POST':
         print('POST Request')
-        description_arr = read_search_queries()
-        file_path = ''
-        while 1:
-            try:
-                chrome_options = Options()
-                driver = webdriver.Chrome(executable_path='chromedriver.exe')
-                driver.maximize_window()
-                print('function calling')
-                file_path = start_process_rebag(description_arr, driver)
+        description_arr = []
+        base_url = "https://shop.rebag.com/search"
 
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': 'IST.eyJraWQiOiJQb3pIX2FDMiIsImFsZyI6IlJTMjU2In0.eyJkYXRhIjoie1wiaWRcIjpcIjYzYzA5MDk4LTk1M2ItNDJmOC1iOWUyLWY3NWM0NmJjZGI0ZFwiLFwiaWRlbnRpdHlcIjp7XCJ0eXBlXCI6XCJhcHBsaWNhdGlvblwiLFwiaWRcIjpcImNiZWEwNTJiLWM3YjctNGY2Ny1hNTE2LTM5ZGQwMjhhMjJkMlwifSxcInRlbmFudFwiOntcInR5cGVcIjpcImFjY291bnRcIixcImlkXCI6XCI4ODA1ZDA2MC03NjA4LTQ0NzYtYTMzYS03ODA0YWM0YzZhMmNcIn19IiwiaWF0IjoxNjkyMTI2OTk5fQ.fdAs9YtidmgITS1B_DYr6YmKuGyUMjPDpRj-L-FWl_qwYVcrW4sZMSvdyPVOSe32gqKLbm0t8MzeIb1cUs8D_Tz1tXoWEeZLoQODwXNQ6eqniMEhJrKkekEh5KlguyDNcEKIWgxkeeIeVqk7BDAGrZvv-f6XNgyxlVw4KWHL3006XGsk9W182vpKd3I1_1l1_zSdfYQrnoFjQRCw-sU_HYaL8wvIf-PMD8ufjswe4GyGPmUgzHN6uYijLZ7yac6m22AI6B1nVNnSDoUb0DWa_6bkcb4mFMca4ji7uq4A3BcTqeJtd7sQzdGYu0RiFaU5pe3fU5rCXqgrNNjeAfXWgw',
+            'wix-site-id': 'a4577014-181b-4d27-bb2d-ad476751caef',
+        }
+
+        response = requests.post('https://www.wixapis.com/stores/v1/products/query', headers=headers)
+
+        if response.status_code == 200:
+            data = response.json()
+            for product in data.get('products', []):
+                description_arr.append(product.get('name', ''))
+        else:
+            print("Failed to fetch products from Wix. Status code:", response.status_code)
+            return render(request, 'maisondeluxe.html')
+
+        scrapped_list = []
+        csv_heading = ['Description', 'Product Price', 'Discount Price', 'Status', 'Condition']
+        scrapped_list.append(csv_heading)
+        
+        for desc in description_arr:
+            # Split the search query into words and take the first three words
+            search_query_words = desc.split()[:3]
+            search_query = ' '.join(search_query_words)
+            
+            encoded_query = quote_plus(search_query)
+            full_url = f"{base_url}?type=product&page=1&q={encoded_query}"
+
+
+            driver = webdriver.Chrome(ChromeDriverManager().install())
+            driver.get(full_url)
+
+            time.sleep(10)
+
+            # Find elements with class containing "plp__card"
+            product_infos = driver.find_elements(By.CSS_SELECTOR, 'a.plp__card')
+
+            if not product_infos:
+                print("No product information found.")
                 driver.quit()
-                print('File Path', file_path)
-                file_path = "/" + file_path
-                break
-            except Exception as e:
-                print('<------ Access Denied ------>', e)
+            else:
+                scrapped_list = []
+                for product_detail in product_infos[:5]:
+
+                    try:
+                        print("working")
+
+                        scrapped_data = []
+
+
+                        title = product_detail.find_element(By.CSS_SELECTOR, 'span.products-carousel__card-designer')
+                        title_text = title.text.strip() if title else ''
+
+                        title_complete = product_detail.find_element(By.CSS_SELECTOR, 'span.products-carousel__card-title')
+                        title_complete_number = title_complete.text.strip() if title_complete else ''
+
+                        title_condition = product_detail.find_element(By.CSS_SELECTOR, 'span.products-carousel__card-condition')
+                        condition_text = title_condition.text.strip() if title_condition else ''
+
+                        price_element = product_detail.find_element(By.CSS_SELECTOR, 'span.products-carousel__card-price')
+                        title_text_price = price_element.text.strip() if price_element else ''
+
+                        image_tag = product_detail.find_element(By.CSS_SELECTOR, 'div.products-carousel__image-wrapper img')
+                        print("image tag found",image_tag)
+                        image_link = image_tag.get_attribute("src")
+                        print("Image Link:", image_link)
+                        
+                        
+
+                        combined_variable = title_text + " " + title_complete_number
+                        print("hello i found data",image_link, combined_variable ,condition_text,title_text_price,)
+
+                        scrapped_data.append(combined_variable)
+                        scrapped_data.append(title_text_price)
+                        scrapped_data.append(condition_text)
+                        scrapped_data.append(image_link)
+                        scrapped_list.append(scrapped_data)
+
+                    except Exception as e :
+                        print("Product Not Found",e)
+                        continue
                 driver.quit()
-                time.sleep(10)
-          
-        return render(request, 'rebag.html', context={'csv_file': file_path})
+        for scrapped_data in scrapped_list:  # Skip the header row
+            try:
+                name = scrapped_data[0]
+                price = scrapped_data[1]
+
+                try:
+                    price = price.replace("$", "").replace(",", "")  # Remove dollar sign and commas
+
+                    if price.strip():  # Check if the string is not empty or whitespace
+                        price = float(price)
+                    else:
+                        price = 0.0
+
+                except Exception as e:
+                    print(e)
+                    price = 0.0
+
+
+                if price > 0.0:
+
+                    condition = scrapped_data[2]
+                    image = scrapped_data[3]
+                    
+                    print(name,price,condition,"https:"+image)
+                    json_data = {
+                        'product': {
+                            'name': name,
+                            'productType': 'physical',
+                            'priceData': {
+                                'price': price,
+                            },
+                            'condition': condition,
+                        },
+                    }
+                    
+                    response = requests.post('https://www.wixapis.com/stores/v1/products', headers=headers, json=json_data)
+                    
+                    if response.status_code == 200:
+
+                        response_data1 = response.json()
+                        extracted_product_id1 = response_data1['product']['id']
+                        json_data = {
+                            'media': [
+                                {
+                                    'mediaId': '19620272_1687322489998.jpg',
+                                },
+                                {
+                                    'url':image,
+                                },
+                                {
+                                    'mediaId': '19620272_1687322489998',
+                                },
+                            ],
+                        }
+                        response11 = requests.post(
+                            f'https://www.wixapis.com/stores/v1/products/{extracted_product_id1}/media',
+                            headers=headers,
+                            json=json_data,
+                        )
+                    
+
+                    else:
+                        print(f"Failed to add product '{name}'. Status code: {response.status_code}")
+                else:
+                    print("Product not added to Wix due to zero price:", desc)
+            except Exception as e :
+                print(e)
+                continue
+
+        csv_file_path = 'output_data1-Rebag.csv'  # Change to your desired CSV file path
+
+        with open(csv_file_path, mode='w', newline='', encoding='utf-8') as csv_file:
+            writer = csv.writer(csv_file)
+            writer.writerow(['Image', 'Title', 'Price'])  # Write header row
+
+            for scrapped_data in scrapped_list:  # Skip the header row
+                image = scrapped_data[3]
+                Condition = scrapped_data[2]
+                title = scrapped_data[0]
+                price = scrapped_data[1]
+                writer.writerow([image, title, price,Condition])
+
+
+        return render(request, 'rebag.html')
     return render(request, 'rebag.html')
+
+
+
+
+
 
 def fetch_wix_data():
     headers = {
@@ -991,33 +1394,28 @@ def firstdibs(request):
     if request.method == 'POST':
         print('POST Request')
         description_arr = fetch_wix_data()
-        # for row in description_arr:
-        #     print('Product --->>',row)
-        file_path = ''
-        while 1:
+
+        file_paths = []
+        print(description_arr)
+        for query in description_arr:
             try:
+                print(query)
                 chrome_options = uc.ChromeOptions()
-                
-                driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()),  options=chrome_options)
+                driver = webdriver.Chrome(ChromeDriverManager().install())
                 driver.maximize_window()
-                # driver = uc.Chrome(service=Service(ChromeDriverManager().install()))
-                print('function calling')
-                # time.sleep(5)
-                try:
-                    file_path = start_process_firstdibs(description_arr, driver)
-                except:
-                    print(" in main firstdibs inner exception ")
+
+                file_path = start_process_firstdibs([query], driver)  # Pass query as a list
                 driver.quit()
-                print('File Path',file_path)
-                file_path = "/" + file_path
-                break
+
+                file_paths.append(file_path)
             except Exception as e:
-                print('<------ Access Denied ------> in main firstdibs',e)
+                print('<------ Exception occurred in main firstdibs ------>', e)
                 driver.quit()
-                time.sleep(10)
-          
-        return render(request, 'firstdibs.html',context={'csv_file':file_path})
+                time.sleep(2)
+
+        return render(request, 'firstdibs.html', context={'csv_files': file_paths})
     return render(request, 'firstdibs.html')
+
 
 
 
@@ -1161,6 +1559,17 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from django.shortcuts import render
+import requests
+import time
+import re
+import csv
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import NoSuchElementException, InvalidSelectorException
+from webdriver_manager.chrome import ChromeDriverManager
+from django.shortcuts import render  # Assuming you're using Django for rendering
 
 def ebay(request):
     if request.method == 'POST':
@@ -1183,16 +1592,11 @@ def ebay(request):
                     'product_price': product['price']
                 })
 
-            driver = webdriver.Chrome(executable_path='chromedriver.exe')
+            driver = webdriver.Chrome(ChromeDriverManager().install())
 
-            scraped_data = {
-                'Image': [],
-                'Title': [],
-                'Price': [],
-            }
-
+            scraped_data_array = []
             updated_product_ids = set()
-
+            
             for product_data in products_array:
                 product_name = product_data['name']
                 product_id = product_data['product_id']
@@ -1201,7 +1605,6 @@ def ebay(request):
                     print(f"Product already updated: {product_name}")
                     continue
 
-                # Extract the first three words from the product_name
                 search_words = ' '.join(product_name.split()[:3])
 
                 driver.get("https://www.ebay.com/")
@@ -1253,7 +1656,7 @@ def ebay(request):
                     # Extract numeric part of the price and convert to integer
                     price_numeric = re.findall(r'\d+\.\d+', price)
                     if len(price_numeric) > 0:
-                        price_int = int(float(price_numeric[0]) * 100)  # Convert to cents (integer) for better precision
+                        price_int = int(float(price_numeric[0]) * 100)
                     else:
                         print(f"Failed to extract numeric price for product: {product_name}. Skipping...")
                         continue
@@ -1269,29 +1672,55 @@ def ebay(request):
                         },
                     }
 
-                    response = requests.patch(f'https://www.wixapis.com/stores/v1/products/{product_id}', headers=headers, json=scraped_product_data)
-                    response1 = requests.post('https://www.wixapis.com/stores/v1/products', headers=headers, json=scraped_product_data)
-
-                    if response1.status_code == 200:
-                        print(f"Product updated successfully: {product_name}")
-                        updated_product_ids.add(product_id)  # Add the product ID to the set
-                    else:
-                        print(f"Failed to update product: {product_name}. Status code: {response.status_code}, {response.content}")
+                    response = requests.post('https://www.wixapis.com/stores/v1/products', headers=headers, json=scraped_product_data)
 
                     if response.status_code == 200:
-                        print(f"Product updated successfully: {product_name}")
-                        updated_product_ids.add(product_id)  # Add the product ID to the set
-                    else:
-                        print(f"Failed to update product: {product_name}. Status code: {response.status_code}, {response.content}")
+                        response_data = response.json()
 
+                        extracted_product_id = response_data['product']['id']
+                        json_data = {
+                            'media': [
+                                {
+                                    'mediaId': '19620272_1687322489998.jpg',
+                                },
+                                {
+                                    'url': image,
+                                },
+                                {
+                                    'mediaId': '19620272_1687322489998',
+                                },
+                            ],
+                        }
+                        response = requests.post(
+                            f'https://www.wixapis.com/stores/v1/products/{extracted_product_id}/media',
+                            headers=headers,
+                            json=json_data,
+                        )
+
+                        scraped_data_array.append({
+                            'Image': image,
+                            'Title': title,
+                            'Price': price
+                        })
+
+                        print(f"Product Added successfully: {product_name}")
                 except (NoSuchElementException, InvalidSelectorException) as e:
                     print(f"Element not found or invalid selector for product: {product_name}. Retrying... Error: {str(e)}")
 
                 else:
-                # If the loop completes without a successful break, print a message
                     print(f"Could not scrape data for product: {product_name} even after retries. Skipping...")
                     continue
             driver.quit()
+
+            # Save scraped data to a CSV file
+            csv_file_path = 'output_data.csv'  # Change to your desired CSV file path
+
+            with open(csv_file_path, mode='w', newline='', encoding='utf-8') as csv_file:
+                fieldnames = ['Image', 'Title', 'Price']
+                writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
+                writer.writeheader()
+                writer.writerows(scraped_data_array)
+
         else:
             print(f"Failed to fetch products. Status code: {response.status_code}, {response.content}")
 
@@ -1449,6 +1878,33 @@ import random
 import csv
 from urllib.parse import quote_plus
 from bs4 import BeautifulSoup
+from collections import defaultdict
+
+# Import necessary libraries
+import requests
+from bs4 import BeautifulSoup
+from urllib.parse import quote_plus
+from collections import defaultdict
+from django.shortcuts import render
+from requests.exceptions import RequestException
+
+
+import requests
+import random
+import csv
+from urllib.parse import quote_plus
+from bs4 import BeautifulSoup
+
+import requests
+import random
+import csv
+from urllib.parse import quote_plus
+from bs4 import BeautifulSoup
+from collections import defaultdict
+
+
+
+
 
 
 def maisondeluxe(request):
@@ -1459,13 +1915,13 @@ def maisondeluxe(request):
 
         # Fetching the products from Wix
         headers = {
-            'Content-Type': 'application/json',
-            'Authorization': 'IST.eyJraWQiOiJQb3pIX2FDMiIsImFsZyI6IlJTMjU2In0.eyJkYXRhIjoie1wiaWRcIjpcIjYzYzA5MDk4LTk1M2ItNDJmOC1iOWUyLWY3NWM0NmJjZGI0ZFwiLFwiaWRlbnRpdHlcIjp7XCJ0eXBlXCI6XCJhcHBsaWNhdGlvblwiLFwiaWRcIjpcImNiZWEwNTJiLWM3YjctNGY2Ny1hNTE2LTM5ZGQwMjhhMjJkMlwifSxcInRlbmFudFwiOntcInR5cGVcIjpcImFjY291bnRcIixcImlkXCI6XCI4ODA1ZDA2MC03NjA4LTQ0NzYtYTMzYS03ODA0YWM0YzZhMmNcIn19IiwiaWF0IjoxNjkyMTI2OTk5fQ.fdAs9YtidmgITS1B_DYr6YmKuGyUMjPDpRj-L-FWl_qwYVcrW4sZMSvdyPVOSe32gqKLbm0t8MzeIb1cUs8D_Tz1tXoWEeZLoQODwXNQ6eqniMEhJrKkekEh5KlguyDNcEKIWgxkeeIeVqk7BDAGrZvv-f6XNgyxlVw4KWHL3006XGsk9W182vpKd3I1_1l1_zSdfYQrnoFjQRCw-sU_HYaL8wvIf-PMD8ufjswe4GyGPmUgzHN6uYijLZ7yac6m22AI6B1nVNnSDoUb0DWa_6bkcb4mFMca4ji7uq4A3BcTqeJtd7sQzdGYu0RiFaU5pe3fU5rCXqgrNNjeAfXWgw',
-            'wix-site-id': 'a4577014-181b-4d27-bb2d-ad476751caef',
+        'Content-Type': 'application/json',
+        'Authorization': 'IST.eyJraWQiOiJQb3pIX2FDMiIsImFsZyI6IlJTMjU2In0.eyJkYXRhIjoie1wiaWRcIjpcIjYzYzA5MDk4LTk1M2ItNDJmOC1iOWUyLWY3NWM0NmJjZGI0ZFwiLFwiaWRlbnRpdHlcIjp7XCJ0eXBlXCI6XCJhcHBsaWNhdGlvblwiLFwiaWRcIjpcImNiZWEwNTJiLWM3YjctNGY2Ny1hNTE2LTM5ZGQwMjhhMjJkMlwifSxcInRlbmFudFwiOntcInR5cGVcIjpcImFjY291bnRcIixcImlkXCI6XCI4ODA1ZDA2MC03NjA4LTQ0NzYtYTMzYS03ODA0YWM0YzZhMmNcIn19IiwiaWF0IjoxNjkyMTI2OTk5fQ.fdAs9YtidmgITS1B_DYr6YmKuGyUMjPDpRj-L-FWl_qwYVcrW4sZMSvdyPVOSe32gqKLbm0t8MzeIb1cUs8D_Tz1tXoWEeZLoQODwXNQ6eqniMEhJrKkekEh5KlguyDNcEKIWgxkeeIeVqk7BDAGrZvv-f6XNgyxlVw4KWHL3006XGsk9W182vpKd3I1_1l1_zSdfYQrnoFjQRCw-sU_HYaL8wvIf-PMD8ufjswe4GyGPmUgzHN6uYijLZ7yac6m22AI6B1nVNnSDoUb0DWa_6bkcb4mFMca4ji7uq4A3BcTqeJtd7sQzdGYu0RiFaU5pe3fU5rCXqgrNNjeAfXWgw',
+        'wix-site-id': 'a4577014-181b-4d27-bb2d-ad476751caef',
         }
 
         response = requests.post('https://www.wixapis.com/stores/v1/products/query', headers=headers)
-        
+
         if response.status_code == 200:
             data = response.json()
             for product in data.get('products', []):
@@ -1475,166 +1931,148 @@ def maisondeluxe(request):
             return render(request, 'maisondeluxe.html')
 
         scrapped_list = []
-        csv_haeding = ['Discription','Product Price', 'Discount Price' , 'Status','Condition']
-        scrapped_list.append(csv_haeding)
+        csv_heading = ['Description', 'Product Price', 'Discount Price', 'Status', 'Condition']
+        scrapped_list.append(csv_heading)
+
         for desc in description_arr:
-            print('<<----- Product Desc --->>',desc)
-            # Define the search query
+
             search_query = desc
-
-            # Encode the search query
             encoded_query = quote_plus(search_query)
-
-            # Construct the full URL
             full_url = f"{base_url}?type=product&page=1&q={encoded_query}"
 
-            # Get the HTML of the website
             response = requests.get(full_url)
-            # print(response)
-            # Create a BeautifulSoup object
             soup = BeautifulSoup(response.content, "html.parser")
-            try:
-                pages  = soup.find(class_="pagecount").text
-                # Split the string by spaces
-                split_text = pages.split()
 
-                # Get the last element from the split
-                last_value = split_text[-1]
-                for page in range(int(last_value)):
-                    page_number = page+1
-                    page_str = str(page_number)
-                    print(page+1)
-                    full_url = f"{base_url}?type=product&page={page_str}&q={encoded_query}"
-                    response = requests.get(full_url)
-                    # Create a BeautifulSoup object
-                    soup = BeautifulSoup(response.content, "html.parser")
-                    # Find all div elements with class "product-detail"
-                    product_details = soup.find_all('div', class_='product-detail')
-                    product_infos = soup.find_all('div', class_='product-info')
-                    # print(product_details)
-                    # Iterate over the found elements
-                    for product_detail in product_details:
-                        scrapped_data = []
-                        # Find the nested elements with classes "title" and "price-area"
-                        title_element = product_detail.find(class_="title")
-                        price_element = product_detail.find(class_="price-area")
-                        product_info = product_detail.find_previous_sibling('div')
+            product_details = soup.find_all('div', class_='block-inner')
+            product_infos = soup.find_all('div', class_='product-info')
 
-                        # Extract the text from the nested elements
-                        title_text = title_element.find('a').get_text(strip=True) if title_element else ''
-                        try:
-                            org_price_text = price_element.find(class_="was-price").get_text(strip=True) if price_element else ''
-                        except:
-                            org_price_text = 0
-                        dis_price_text = price_element.find(class_="price").get_text(strip=True) if price_element else ''
+            for product_detail in product_details:
+                try:
 
-                        # Print the extracted text
-                        scrapped_data.append(title_text )
-                        if org_price_text != 0:
-                            scrapped_data.append(org_price_text )
-                            scrapped_data.append(dis_price_text )
-                        else:
-                            scrapped_data.append(dis_price_text)
-                            scrapped_data.append('None' )
-                        status = ''
-                        if org_price_text == '' and dis_price_text == '':
-                            status = 'Sold out'
-                        else:
-                            status  = 'Available'
-                        scrapped_data.append(status)
-                        product_info = product_detail.find_previous_sibling('div')
-                        try:
-                            condition = product_info.find(class_="price").find_next_sibling().get_text(strip=True)
-                        except:
-                            condition = ''
-                        scrapped_data.append(condition)
-                        scrapped_list.append(scrapped_data)
-                                            
-                        
-                        print("Title:", title_text)
-                        print("Price:", org_price_text)
-                        print("Discount Price:", dis_price_text)
-                        print("Condition:", condition)
-                        print()  # Add a blank line for readability
-            except:
-                product_details = soup.find_all('div', class_='product-detail')
-                # print(product_details)
-                # Iterate over the found elements
-                for product_detail in product_details:
                     scrapped_data = []
-                    # Find the nested elements with classes "title" and "price-area"
+
                     title_element = product_detail.find(class_="title")
-                    price_element = product_detail.find(class_="price-area")
-
-                    # Extract the text from the nested elements
-                    title_text = title_element.find('a').get_text(strip=True) if title_element else ''
-                    try:
-                        org_price_text = price_element.find(class_="was-price").get_text(strip=True) if price_element else ''
-                    except:
-                        org_price_text = 0
-                    dis_price_text = price_element.find(class_="price").get_text(strip=True) if price_element else ''
-
-                    # Print the extracted text
-                    scrapped_data.append(title_text )
-                    if org_price_text != 0:
-                        scrapped_data.append(org_price_text )
-                        scrapped_data.append(dis_price_text )
+                    if title_element:
+                        title_text = title_element.get_text(strip=True)
                     else:
-                        scrapped_data.append(dis_price_text)
-                        scrapped_data.append('None' )
-                    status = ''
-                    if org_price_text == '' and dis_price_text == '':
-                        status = 'Sold out'
+                        title_text = ''
+
+                    price_element = product_detail.find(class_="amount")
+                    if price_element is None:
+                        price_element = product_detail.find(class_="price")
+                        
+                    if price_element:
+                        price_text = price_element.get_text(strip=True)
                     else:
-                        status  = 'Available'
-                    scrapped_data.append(status)
-                    product_info = product_detail.find_previous_sibling('div')
-                    try:
-                        condition = product_info.find(class_="price").find_next_sibling().get_text(strip=True)
-                    except:
-                        condition = ''
-                    scrapped_data.append(condition)
+                        price_text = ''
+
+                    condition_element = product_detail.find(class_='collection-listing__product-info__brand-new')
+                    if condition_element:
+                        condition_text = condition_element.get_text(strip=True)
+                    else:
+                        condition_text = ''
+
+                    image_tag = product_detail.find(class_="image-label-wrap").find('img')
+                    if image_tag:
+                        image_src = image_tag['src']
+                    else:
+                        image_src = ''
+
+                    print(title_text,image_src)
+
+                    scrapped_data.append(title_text)
+                    scrapped_data.append(price_text)
+                    scrapped_data.append(condition_text)
+                    scrapped_data.append(image_src)
                     scrapped_list.append(scrapped_data)
-                    print("Title:", title_text)
-                    print("Price:", org_price_text)
-                    print("Discount Price:", dis_price_text)
-                    print()  # Add a blank line for readability
-        print('------------------------------------')
-        print(scrapped_list)
-        if dis_price_text:
-            price = float(dis_price_text.replace(',', '').replace('$', ''))
-        else:
-            price = 5000  # Or any other appropriate default value
 
-        for product_detail in product_details:
-            scrapped_data = []
+                except:
 
+                    print("--- Products not Found ---")
+                    continue
 
-            # Your existing code to extract data...
+        for scrapped_data in scrapped_list[1:]:  # Skip the header row
+            name = scrapped_data[0]
+            price = scrapped_data[1]
 
-            # Create the JSON data for adding a product to Wix
-            json_data = {
-                'product': {
-                    'name': title_text,
-                    'productType': 'physical',
-                    'priceData': {
-                        'price': price,
+            try:
+                price = price.replace("$", "").replace(",", "")  # Remove dollar sign and commas
+                price = float(price)
+            except:
+                price = 0.0
+
+            if price > 0.0:
+
+                condition = scrapped_data[2]
+                image = scrapped_data[3]
+                
+                print(name,price,condition,"https:"+image)
+                json_data = {
+                    'product': {
+                        'name': name,
+                        'productType': 'physical',
+                        'priceData': {
+                            'price': price,
+                        },
+                        'condition': condition,
                     },
-                    # Other data fields you want to add...
                 }
-            }
+                
+                response = requests.post('https://www.wixapis.com/stores/v1/products', headers=headers, json=json_data)
+                
+                if response.status_code == 200:
 
-            # Send a POST request to add the product to Wix
-            response = requests.post('https://www.wixapis.com/stores/v1/products', headers=headers, json=json_data)
+                    response_data1 = response.json()
+                    extracted_product_id1 = response_data1['product']['id']
+                    json_data = {
+                        'media': [
+                            {
+                                'mediaId': '19620272_1687322489998.jpg',
+                            },
+                            {
+                                'url': "https:"+image,
+                            },
+                            {
+                                'mediaId': '19620272_1687322489998',
+                            },
+                        ],
+                    }
+                    response11 = requests.post(
+                        f'https://www.wixapis.com/stores/v1/products/{extracted_product_id1}/media',
+                        headers=headers,
+                        json=json_data,
+                    )
+                
 
-            if response.status_code == 200:
-                print("Product added to Wix:", title_text)
+                else:
+                    print(f"Failed to add product '{name}'. Status code: {response.status_code}")
             else:
-                print("Failed to add product to Wi  x. Status code:", response.content)
-    
+                print("Product not added to Wix due to zero price:", desc)
+
+        csv_file_path = 'output_data.csv'  # Change to your desired CSV file path
+
+        with open(csv_file_path, mode='w', newline='', encoding='utf-8') as csv_file:
+            writer = csv.writer(csv_file)
+            writer.writerow(['Image', 'Title', 'Price'])  # Write header row
+
+            for scrapped_data in scrapped_list[1:]:  # Skip the header row
+                image = scrapped_data[3]
+                Condition = scrapped_data[2]
+                title = scrapped_data[0]
+                price = scrapped_data[1]
+                writer.writerow([image, title, price,Condition])
+
         return render(request, 'maisondeluxe.html')
     
     return render(request, 'maisondeluxe.html')
+
+
+  
+
+
+
+
+
 
 def main_page(request):
     return render(request, 'index.html')
